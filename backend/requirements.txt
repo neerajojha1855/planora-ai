@@ -1,0 +1,9 @@
+fastapi
+pydantic-settings
+sqlalchemy[asyncio]
+pwdlib
+python-dotenv
+alembic
+pytest
+psycopg[binary]
+uvicorn
