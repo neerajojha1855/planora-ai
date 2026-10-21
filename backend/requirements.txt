@@ -1,9 +1,11 @@
 fastapi
 pydantic-settings
 sqlalchemy[asyncio]
-pwdlib
+pwdlib[argon2]
 python-dotenv
 alembic
 pytest
+pytest-asyncio
+httpx
 psycopg[binary]
 uvicorn

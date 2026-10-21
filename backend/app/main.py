@@ -5,18 +5,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 
 from .config import get_settings
-from .db import check_database_connection_async, dispose_engine
-
+from .db import check_database_connection, dispose_engine
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     yield
-    dispose_engine()
+    await dispose_engine()
 
 
 settings = get_settings()
 app = FastAPI(
-    title="Planora API",
+    title=settings.app_name,
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -29,10 +28,10 @@ app.add_middleware(
 )
 
 
-@app.get("/api/v1/health")
+@app.get(f"{settings.api_prefix}/health")
 async def health() -> dict[str, str]:
     try:
-        await check_database_connection_async()
+        await check_database_connection()
     except SQLAlchemyError:
         return {"status": "degraded", "database": "unavailable"}
     return {"status": "ok", "database": "connected"}
