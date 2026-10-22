@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   Sparkles,
-  DollarSign,
+  IndianRupee,
   Calendar,
   ClipboardList,
   Lightbulb,
@@ -52,7 +52,7 @@ export const PlanDisplay: React.FC<Props> = ({
             <div className="text-right">
               <span className="text-xs text-gray-400 uppercase font-mono block">Budget Target</span>
               <span className="text-xl sm:text-2xl font-black text-amber-400">
-                ${plan.brief.budget.toLocaleString()} {plan.brief.currency}
+                ₹{plan.brief.budget.toLocaleString('en-IN')}
               </span>
             </div>
           </div>
@@ -67,7 +67,7 @@ export const PlanDisplay: React.FC<Props> = ({
       <div className="flex flex-wrap gap-2 border-b border-[#26263f] pb-3">
         {[
           { id: 'summary' as const, label: 'Executive Summary', icon: Sparkles },
-          { id: 'budget' as const, label: 'Smart Budget', icon: DollarSign },
+          { id: 'budget' as const, label: 'Smart Budget', icon: IndianRupee },
           { id: 'timeline' as const, label: 'Milestone Timeline', icon: Calendar },
           { id: 'vendors' as const, label: 'Vendor Checklist', icon: ClipboardList },
           { id: 'ideas' as const, label: 'Personalized Ideas', icon: Lightbulb },
@@ -146,15 +146,15 @@ export const PlanDisplay: React.FC<Props> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-[#151526] border border-[#2d2d4a]">
               <span className="text-xs text-gray-400 uppercase font-mono block">Total Budget</span>
-              <strong className="text-xl text-white font-black">${content.budget.total_budget.toLocaleString()}</strong>
+              <strong className="text-xl text-white font-black">₹{content.budget.total_budget.toLocaleString('en-IN')}</strong>
             </div>
             <div className="p-4 rounded-xl bg-[#151526] border border-[#2d2d4a]">
               <span className="text-xs text-gray-400 uppercase font-mono block">Allocated Expenses</span>
-              <strong className="text-xl text-purple-400 font-black">${content.budget.allocated_budget.toLocaleString()}</strong>
+              <strong className="text-xl text-purple-400 font-black">₹{content.budget.allocated_budget.toLocaleString('en-IN')}</strong>
             </div>
             <div className="p-4 rounded-xl bg-[#151526] border border-amber-500/20 bg-amber-500/5">
               <span className="text-xs text-amber-400 uppercase font-mono block">Contingency Reserve</span>
-              <strong className="text-xl text-amber-300 font-black">${content.budget.contingency_reserve.toLocaleString()}</strong>
+              <strong className="text-xl text-amber-300 font-black">₹{content.budget.contingency_reserve.toLocaleString('en-IN')}</strong>
             </div>
           </div>
 
@@ -184,7 +184,7 @@ export const PlanDisplay: React.FC<Props> = ({
                       </span>
                     </td>
                     <td className="py-3 text-right font-mono font-semibold text-white">
-                      ${item.estimated_cost.toLocaleString()}
+                      ₹{item.estimated_cost.toLocaleString('en-IN')}
                     </td>
                   </tr>
                 ))}
@@ -256,7 +256,7 @@ export const PlanDisplay: React.FC<Props> = ({
                     {v.category}
                   </span>
                   <span className="text-xs text-amber-400 font-mono font-bold">
-                    Est. ${v.estimated_budget.toLocaleString()}
+                    Est. ₹{v.estimated_budget.toLocaleString('en-IN')}
                   </span>
                 </div>
                 <h4 className="text-base font-bold text-white">{v.role}</h4>

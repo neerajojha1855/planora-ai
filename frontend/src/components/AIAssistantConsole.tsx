@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, Heart, Cake, Users, Calendar, DollarSign, MapPin, Send, Wand2 } from 'lucide-react'
+import { Sparkles, Heart, Cake, Users, Calendar, IndianRupee, MapPin, Send, Wand2 } from 'lucide-react'
 import type { EventBrief, EventType } from '../types/planner'
 
 interface Props {
@@ -8,23 +8,40 @@ interface Props {
 }
 
 const SUGGESTIONS = [
-  { label: '💍 80-guest botanical garden wedding in Austin under $20k', event_type: 'wedding' as const, budget: 20000, guests: 80, loc: 'Austin, TX', notes: 'Romantic botanical theme with acoustic live music and craft cocktails.' },
-  { label: '🎂 30-guest 90s retro birthday party in Seattle under $3.5k', event_type: 'birthday' as const, budget: 3500, guests: 30, loc: 'Seattle, WA', notes: 'Arcade games, neon lights, throwback playlist, and vintage custom cake.' },
-  { label: '🎪 250-guest community spring harvest festival under $8k', event_type: 'community' as const, budget: 8000, guests: 250, loc: 'Portland, OR', notes: 'Local artisan stalls, food trucks, family lawn games, and acoustic stage.' },
+  {
+    label: '💍 150-guest royal heritage wedding in Udaipur (₹15,00,000)',
+    event_type: 'wedding' as const,
+    budget: 1500000,
+    guests: 150,
+    loc: 'Udaipur, Rajasthan',
+    notes: 'Royal lakeside heritage palace wedding with traditional shehnai, Rajasthani banquet, and floral mandap decoration.',
+  },
+  {
+    label: '🎂 50-guest Bollywood rooftop birthday in Mumbai (₹75,000)',
+    event_type: 'birthday' as const,
+    budget: 75000,
+    guests: 50,
+    loc: 'Mumbai, Maharashtra',
+    notes: 'Bollywood retro theme, neon disco lights, DJ spinning throwback hits, custom photo booth, and dessert station.',
+  },
+  {
+    label: '🎪 500-guest Diwali community festival in Bangalore (₹2,50,000)',
+    event_type: 'community' as const,
+    budget: 250000,
+    guests: 500,
+    loc: 'Bangalore, Karnataka',
+    notes: 'Diya lighting ceremony, street food stalls, acoustic cultural dance stage, rangoli contest, and eco-friendly fireworks.',
+  },
 ]
 
 export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => {
   const [eventType, setEventType] = useState<EventType>('wedding')
-  const [location, setLocation] = useState('San Francisco, CA')
-  const [eventDate, setEventDate] = useState(() => {
-    const d = new Date()
-    d.setDate(d.getDate() + 120)
-    return d.toISOString().split('T')[0]
-  })
-  const [guestCount, setGuestCount] = useState(75)
-  const [budget, setBudget] = useState(15000)
-  const [currency] = useState('USD')
-  const [notes, setNotes] = useState('Elegant outdoor celebration with seasonal farm-to-table dinner and live acoustic vibes.')
+  const [location, setLocation] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [guestCount, setGuestCount] = useState<number | ''>('')
+  const [budget, setBudget] = useState<number | ''>('')
+  const [currency] = useState('INR')
+  const [notes, setNotes] = useState('')
 
   const applySuggestion = (s: typeof SUGGESTIONS[0]) => {
     setEventType(s.event_type)
@@ -32,16 +49,23 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
     setGuestCount(s.guests)
     setLocation(s.loc)
     setNotes(s.notes)
+    if (!eventDate) {
+      const d = new Date()
+      d.setDate(d.getDate() + 90)
+      setEventDate(d.toISOString().split('T')[0])
+    }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!location || !eventDate || !guestCount || !budget) return
+
     onSubmit({
       event_type: eventType,
       location,
       event_date: eventDate,
-      guest_count: guestCount,
-      budget,
+      guest_count: Number(guestCount),
+      budget: Number(budget),
       currency,
       notes,
     })
@@ -49,7 +73,6 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
 
   return (
     <div className="glass-panel rounded-2xl p-6 sm:p-8 relative overflow-hidden border border-[#2d2d4a] ai-pulse">
-      {/* Background glow orb */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
@@ -60,14 +83,14 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
           </div>
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">AI Event Planning Console</h2>
-            <p className="text-xs sm:text-sm text-gray-400">Describe your dream celebration and let the AI architect your complete plan in seconds.</p>
+            <p className="text-xs sm:text-sm text-gray-400">Choose a suggestion below or enter your vision to architect your celebration blueprint.</p>
           </div>
         </div>
       </div>
 
       {/* Suggestion Chips */}
       <div className="mb-6">
-        <span className="text-xs uppercase font-mono tracking-wider text-purple-400 block mb-2">⚡ Quick Inspiration Prompts:</span>
+        <span className="text-xs uppercase font-mono tracking-wider text-purple-400 block mb-2">⚡ Click a prompt to auto-fill details:</span>
         <div className="flex flex-wrap gap-2">
           {SUGGESTIONS.map((s, idx) => (
             <button
@@ -133,7 +156,7 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#151526] border border-[#2d2d4a] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm"
-              placeholder="City, State"
+              placeholder="e.g., Udaipur, Rajasthan"
             />
           </div>
 
@@ -153,7 +176,7 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
           <div>
             <label className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-purple-400" /> Guest Count</span>
-              <strong className="text-purple-300 font-bold">{guestCount}</strong>
+              {guestCount !== '' && <strong className="text-purple-300 font-bold">{guestCount}</strong>}
             </label>
             <input
               type="number"
@@ -161,23 +184,27 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
               max={10000}
               required
               value={guestCount}
-              onChange={(e) => setGuestCount(Number(e.target.value))}
+              onChange={(e) => setGuestCount(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="e.g., 150"
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#151526] border border-[#2d2d4a] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-amber-400" /> Budget ({currency})</span>
-              <strong className="text-amber-400 font-bold">${budget.toLocaleString()}</strong>
+              <span className="flex items-center gap-1.5"><IndianRupee className="w-3.5 h-3.5 text-amber-400" /> Budget ({currency})</span>
+              {budget !== '' && (
+                <strong className="text-amber-400 font-bold">₹{Number(budget).toLocaleString('en-IN')}</strong>
+              )}
             </label>
             <input
               type="number"
               min={100}
-              step={100}
+              step={1000}
               required
               value={budget}
-              onChange={(e) => setBudget(Number(e.target.value))}
+              onChange={(e) => setBudget(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="e.g., 500000"
               className="w-full px-3.5 py-2.5 rounded-xl bg-[#151526] border border-[#2d2d4a] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm"
             />
           </div>
@@ -193,7 +220,7 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl bg-[#151526] border border-[#2d2d4a] text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm resize-none"
-            placeholder="E.g., Farm-to-table catering, sunset photos, acoustic guitar, vegan dessert options..."
+            placeholder="e.g., Royal heritage palace wedding with traditional shehnai, Rajasthani buffet, and floral mandap decoration..."
           />
         </div>
 
@@ -201,7 +228,7 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !location || !eventDate || !guestCount || !budget}
             className="gradient-button text-white px-7 py-3 rounded-xl font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 text-sm shadow-lg shadow-purple-600/30"
           >
             {isLoading ? (
