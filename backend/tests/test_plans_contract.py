@@ -1,3 +1,4 @@
+import uuid
 from datetime import date, timedelta
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -8,7 +9,23 @@ from app.main import app
 async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # Pre-authenticate client with active session cookie
+        await ac.post(
+            "/api/v1/auth/register",
+            json={
+                "email": f"contract_tester_{uuid.uuid4().hex[:6]}@example.com",
+                "password": "Password123",
+            },
+        )
         yield ac
+
+
+@pytest.mark.asyncio
+async def test_unauthenticated_plan_request_returns_401():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as unauth_client:
+        res = await unauth_client.post("/api/v1/plans", json={})
+        assert res.status_code == 401
 
 
 @pytest.mark.asyncio

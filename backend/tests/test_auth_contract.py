@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from httpx import ASGITransport, AsyncClient
 from app.main import app
@@ -12,16 +13,21 @@ async def client():
 
 @pytest.mark.asyncio
 async def test_register_success(client: AsyncClient):
+    unique_email = f"planner_{uuid.uuid4().hex[:6]}@example.com"
     payload = {
-        "email": "Planner.User@Example.com",
+        "email": unique_email,
         "password": "SecurePassword123",
         "full_name": "Alex Morgan",
     }
     response = await client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 201
     data = response.json()
-    assert data["email"] == "planner.user@example.com"
+    assert data["email"] == unique_email.lower()
     assert "id" in data
+
+    # Also assert duplicate registration rejection
+    dup_res = await client.post("/api/v1/auth/register", json=payload)
+    assert dup_res.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -46,9 +52,12 @@ async def test_register_weak_password(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_login_success_shape(client: AsyncClient):
+    email = f"login_user_{uuid.uuid4().hex[:6]}@example.com"
+    password = "SecurePassword123"
+    await client.post("/api/v1/auth/register", json={"email": email, "password": password})
     payload = {
-        "email": "user@example.com",
-        "password": "SecurePassword123",
+        "email": email,
+        "password": password,
     }
     response = await client.post("/api/v1/auth/login", json=payload)
     assert response.status_code == 200
