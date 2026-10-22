@@ -10,24 +10,67 @@ import {
   HelpCircle,
   ArrowRight,
   ShieldCheck,
+  Share2,
+  Printer,
+  Check,
 } from 'lucide-react'
 import type { PlanRecord } from '../types/planner'
 
 interface Props {
   plan: PlanRecord
-  onRegenerateSection: (section: 'budget' | 'timeline' | 'vendor_checklist' | 'personalized_ideas') => void
+  onRequestRegenerate: (section: 'budget' | 'timeline' | 'vendor_checklist' | 'personalized_ideas') => void
   isRegenerating: boolean
   regeneratingSection: string | null
 }
 
 export const PlanDisplay: React.FC<Props> = ({
   plan,
-  onRegenerateSection,
+  onRequestRegenerate,
   isRegenerating,
   regeneratingSection,
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'budget' | 'timeline' | 'vendors' | 'ideas'>('summary')
+  const [completedMilestones, setCompletedMilestones] = useState<Record<number, boolean>>({})
+  const [vendorStatuses, setVendorStatuses] = useState<Record<number, string>>({})
+  const [copied, setCopied] = useState(false)
+
   const content = plan.plan_content
+
+  const toggleMilestone = (idx: number) => {
+    setCompletedMilestones((prev) => ({ ...prev, [idx]: !prev[idx] }))
+  }
+
+  const cycleVendorStatus = (idx: number) => {
+    const order = ['To Research', 'Contacted', 'Booked']
+    const current = vendorStatuses[idx] || 'To Research'
+    const nextIdx = (order.indexOf(current) + 1) % order.length
+    setVendorStatuses((prev) => ({ ...prev, [idx]: order[nextIdx] }))
+  }
+
+  const handleCopyMarkdown = () => {
+    const md = `# ${plan.brief.event_type.toUpperCase()} Celebration in ${plan.brief.location}
+**Location**: ${plan.brief.location} | **Date**: ${plan.brief.event_date} | **Guests**: ${plan.brief.guest_count}
+**Budget**: ₹${plan.brief.budget.toLocaleString('en-IN')}
+
+## Executive Summary
+${content.summary}
+
+## Budget Breakdown
+- Total: ₹${content.budget.total_budget.toLocaleString('en-IN')}
+- Allocated: ₹${content.budget.allocated_budget.toLocaleString('en-IN')}
+- Contingency: ₹${content.budget.contingency_reserve.toLocaleString('en-IN')}
+
+## Immediate Next Actions
+${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
+`
+    navigator.clipboard.writeText(md)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handlePrint = () => {
+    window.print()
+  }
 
   return (
     <div className="space-y-6">
@@ -48,13 +91,29 @@ export const PlanDisplay: React.FC<Props> = ({
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-right">
+          <div className="flex items-center gap-3">
+            <div className="text-right mr-2">
               <span className="text-xs text-gray-400 uppercase font-mono block">Budget Target</span>
               <span className="text-xl sm:text-2xl font-black text-amber-400">
                 ₹{plan.brief.budget.toLocaleString('en-IN')}
               </span>
             </div>
+
+            {/* Action buttons */}
+            <button
+              onClick={handleCopyMarkdown}
+              className="p-2.5 rounded-xl bg-[#1a1a2e] border border-[#2d2d4a] text-gray-300 hover:text-white hover:border-purple-500/40 transition-all cursor-pointer"
+              title="Copy Markdown Summary"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={handlePrint}
+              className="p-2.5 rounded-xl bg-[#1a1a2e] border border-[#2d2d4a] text-gray-300 hover:text-white hover:border-purple-500/40 transition-all cursor-pointer"
+              title="Print Blueprint"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -133,16 +192,15 @@ export const PlanDisplay: React.FC<Props> = ({
               <p className="text-xs text-gray-400">Allocated expenses & contingency reserve</p>
             </div>
             <button
-              onClick={() => onRegenerateSection('budget')}
+              onClick={() => onRequestRegenerate('budget')}
               disabled={isRegenerating}
               className="text-xs px-3.5 py-2 rounded-xl bg-purple-900/40 border border-purple-500/30 text-purple-300 hover:bg-purple-800/50 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${regeneratingSection === 'budget' ? 'animate-spin' : ''}`} />
-              <span>Regenerate Budget</span>
+              <span>Customize & Regenerate</span>
             </button>
           </div>
 
-          {/* Allocation gauge */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-[#151526] border border-[#2d2d4a]">
               <span className="text-xs text-gray-400 uppercase font-mono block">Total Budget</span>
@@ -158,7 +216,6 @@ export const PlanDisplay: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Items Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase font-mono text-gray-400 border-b border-[#26263f]">
@@ -194,92 +251,121 @@ export const PlanDisplay: React.FC<Props> = ({
         </div>
       )}
 
-      {/* TAB 3: TIMELINE */}
+      {/* TAB 3: TIMELINE WITH INTERACTIVE CHECKMARKS */}
       {activeTab === 'timeline' && (
         <div className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-white">Milestone Roadmap</h3>
-              <p className="text-xs text-gray-400">Chronological planning phases</p>
+              <p className="text-xs text-gray-400">Click any milestone card to mark as completed</p>
             </div>
             <button
-              onClick={() => onRegenerateSection('timeline')}
+              onClick={() => onRequestRegenerate('timeline')}
               disabled={isRegenerating}
               className="text-xs px-3.5 py-2 rounded-xl bg-purple-900/40 border border-purple-500/30 text-purple-300 hover:bg-purple-800/50 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${regeneratingSection === 'timeline' ? 'animate-spin' : ''}`} />
-              <span>Regenerate Timeline</span>
+              <span>Customize & Regenerate</span>
             </button>
           </div>
 
-          <div className="relative border-l-2 border-purple-500/30 ml-4 pl-6 space-y-8">
-            {content.timeline.map((item, idx) => (
-              <div key={idx} className="relative group">
-                <span className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-purple-500 ring-4 ring-[#131322]"></span>
-                <div className="glass-panel rounded-xl p-4 border border-[#26263f] hover:border-purple-500/40 transition-all">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-mono uppercase text-purple-400 font-bold">{item.phase}</span>
-                    <span className="text-xs text-gray-400 font-mono">T-{item.due_date_offset_days} days</span>
+          <div className="relative border-l-2 border-purple-500/30 ml-4 pl-6 space-y-6">
+            {content.timeline.map((item, idx) => {
+              const isDone = completedMilestones[idx]
+              return (
+                <div
+                  key={idx}
+                  onClick={() => toggleMilestone(idx)}
+                  className="relative group cursor-pointer"
+                >
+                  <span className={`absolute -left-[31px] top-2 w-3.5 h-3.5 rounded-full ring-4 ring-[#131322] transition-colors ${
+                    isDone ? 'bg-emerald-400' : 'bg-purple-500'
+                  }`}></span>
+                  <div className={`glass-panel rounded-xl p-4 border transition-all ${
+                    isDone
+                      ? 'border-emerald-500/30 bg-emerald-950/10 opacity-75'
+                      : 'border-[#26263f] hover:border-purple-500/40'
+                  }`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-mono uppercase text-purple-400 font-bold">{item.phase}</span>
+                      <span className="text-xs text-gray-400 font-mono">T-{item.due_date_offset_days} days</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <h4 className={`text-base font-bold ${isDone ? 'line-through text-gray-400' : 'text-white'}`}>
+                        {item.title}
+                      </h4>
+                      {isDone && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                    </div>
+                    <p className="text-sm text-gray-300 mt-1">{item.description}</p>
                   </div>
-                  <h4 className="text-base font-bold text-white">{item.title}</h4>
-                  <p className="text-sm text-gray-300 mt-1">{item.description}</p>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
 
-      {/* TAB 4: VENDORS */}
+      {/* TAB 4: VENDORS WITH STATUS BADGES */}
       {activeTab === 'vendors' && (
         <div className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-white">Vendor Checklist & Interview Inquiries</h3>
-              <p className="text-xs text-gray-400">Target roles, deadlines and critical vetting questions</p>
+              <h3 className="text-xl font-bold text-white">Vendor Checklist & Inquiry Inquiries</h3>
+              <p className="text-xs text-gray-400">Click a status badge to toggle inquiry state</p>
             </div>
             <button
-              onClick={() => onRegenerateSection('vendor_checklist')}
+              onClick={() => onRequestRegenerate('vendor_checklist')}
               disabled={isRegenerating}
               className="text-xs px-3.5 py-2 rounded-xl bg-purple-900/40 border border-purple-500/30 text-purple-300 hover:bg-purple-800/50 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${regeneratingSection === 'vendor_checklist' ? 'animate-spin' : ''}`} />
-              <span>Regenerate Vendors</span>
+              <span>Customize & Regenerate</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {content.vendor_checklist.map((v, idx) => (
-              <div key={idx} className="glass-panel rounded-xl p-5 border border-[#26263f] space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                    {v.category}
-                  </span>
-                  <span className="text-xs text-amber-400 font-mono font-bold">
-                    Est. ₹{v.estimated_budget.toLocaleString('en-IN')}
-                  </span>
-                </div>
-                <h4 className="text-base font-bold text-white">{v.role}</h4>
-                <p className="text-sm text-gray-300">{v.description}</p>
-                <div className="text-xs text-gray-400 font-mono">
-                  Book by: <strong className="text-purple-300">{v.booking_deadline_weeks} weeks prior</strong>
-                </div>
-
-                {/* Questions to ask */}
-                {v.questions_to_ask && v.questions_to_ask.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-[#26263f]">
-                    <span className="text-xs font-semibold text-gray-400 flex items-center gap-1 mb-2">
-                      <HelpCircle className="w-3.5 h-3.5 text-purple-400" /> Questions to Ask:
+            {content.vendor_checklist.map((v, idx) => {
+              const status = vendorStatuses[idx] || 'To Research'
+              return (
+                <div key={idx} className="glass-panel rounded-xl p-5 border border-[#26263f] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                      {v.category}
                     </span>
-                    <ul className="space-y-1.5 text-xs text-gray-300">
-                      {v.questions_to_ask.map((q, qIdx) => (
-                        <li key={qIdx} className="italic">"{q}"</li>
-                      ))}
-                    </ul>
+                    <button
+                      onClick={() => cycleVendorStatus(idx)}
+                      className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        status === 'Booked' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                        status === 'Contacted' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                        'bg-gray-800 text-gray-300 border border-gray-700'
+                      }`}
+                      title="Click to cycle status"
+                    >
+                      {status}
+                    </button>
                   </div>
-                )}
-              </div>
-            ))}
+                  <h4 className="text-base font-bold text-white">{v.role}</h4>
+                  <p className="text-sm text-gray-300">{v.description}</p>
+                  <div className="flex items-center justify-between text-xs font-mono pt-1">
+                    <span className="text-gray-400">Book: <strong className="text-purple-300">{v.booking_deadline_weeks}w prior</strong></span>
+                    <span className="text-amber-400 font-bold">Est. ₹{v.estimated_budget.toLocaleString('en-IN')}</span>
+                  </div>
+
+                  {v.questions_to_ask && v.questions_to_ask.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-[#26263f]">
+                      <span className="text-xs font-semibold text-gray-400 flex items-center gap-1 mb-2">
+                        <HelpCircle className="w-3.5 h-3.5 text-purple-400" /> Key Questions to Ask:
+                      </span>
+                      <ul className="space-y-1.5 text-xs text-gray-300">
+                        {v.questions_to_ask.map((q, qIdx) => (
+                          <li key={qIdx} className="italic">"{q}"</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -293,12 +379,12 @@ export const PlanDisplay: React.FC<Props> = ({
               <p className="text-xs text-gray-400">Tailored concepts and DIY highlights</p>
             </div>
             <button
-              onClick={() => onRegenerateSection('personalized_ideas')}
+              onClick={() => onRequestRegenerate('personalized_ideas')}
               disabled={isRegenerating}
               className="text-xs px-3.5 py-2 rounded-xl bg-purple-900/40 border border-purple-500/30 text-purple-300 hover:bg-purple-800/50 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${regeneratingSection === 'personalized_ideas' ? 'animate-spin' : ''}`} />
-              <span>Regenerate Ideas</span>
+              <span>Customize & Regenerate</span>
             </button>
           </div>
 

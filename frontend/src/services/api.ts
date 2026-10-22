@@ -121,3 +121,47 @@ export async function regenerateSection(
 
   return res.json()
 }
+
+interface RawPlanResponse {
+  id: string
+  user_id: string
+  event_type: 'wedding' | 'birthday' | 'community'
+  event_brief: {
+    event_type: 'wedding' | 'birthday' | 'community'
+    location: string
+    event_date: string
+    guest_count: number
+    budget_amount: number
+    budget_currency?: string
+    additional_context?: string
+  }
+  plan_data: GeneratedPlanContent
+  created_at: string
+  updated_at?: string
+}
+
+export async function listPlans(): Promise<PlanRecord[]> {
+  const res = await fetch(`${API_BASE}/plans`, {
+    credentials: 'include',
+  })
+  if (!res.ok) return []
+  const data: RawPlanResponse[] = await res.json()
+  return data.map((item) => ({
+    id: item.id,
+    user_id: item.user_id,
+    event_type: item.event_type,
+    brief: {
+      event_type: item.event_brief.event_type,
+      location: item.event_brief.location,
+      event_date: item.event_brief.event_date,
+      guest_count: item.event_brief.guest_count,
+      budget: item.event_brief.budget_amount,
+      currency: item.event_brief.budget_currency || 'INR',
+      notes: item.event_brief.additional_context,
+    },
+    plan_content: item.plan_data,
+    created_at: item.created_at,
+    updated_at: item.updated_at || item.created_at,
+  }))
+}
+
