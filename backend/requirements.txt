@@ -1,4 +1,5 @@
 fastapi
+pydantic[email]
 pydantic-settings
 sqlalchemy[asyncio]
 pwdlib[argon2]

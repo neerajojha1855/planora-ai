@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .config import get_settings
 from .db import check_database_connection, dispose_engine
+from .routers import auth_router, plans_router
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -26,6 +27,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-CSRF-Token"],
 )
+
+app.include_router(auth_router, prefix=settings.api_prefix)
+app.include_router(plans_router, prefix=settings.api_prefix)
 
 
 @app.get(f"{settings.api_prefix}/health")
