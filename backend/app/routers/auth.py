@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Cookie, Depends, Request, 
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import get_settings
+from ..core.rate_limit import auth_rate_limiter
 from ..core.deps import get_current_user
 from ..core.security import generate_session_token, hash_password, hash_session_token, verify_password
 from ..db import get_session
@@ -30,7 +31,7 @@ def _set_session_cookie(response: Response, raw_token: str, max_age: int) -> Non
     )
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserRegisterRequest, response: Response, request: Request, db: AsyncSession=Depends(get_session)) -> UserResponse:
+async def register(payload: UserRegisterRequest, response: Response, request: Request, db: AsyncSession=Depends(get_session), _rate_limit=Depends(auth_rate_limiter)) -> UserResponse:
     """Registration contract boundary with email and password complexity validation."""
     stmt = select(User).where(User.email == payload.email)
     existing = (await db.execute(stmt)).scalar_one_or_none()
@@ -71,7 +72,7 @@ async def register(payload: UserRegisterRequest, response: Response, request: Re
 
 
 @router.post("/login", response_model=AuthMessageResponse)
-async def login(payload: UserLoginRequest, response: Response, request: Request, db: AsyncSession=Depends(get_session)) -> AuthMessageResponse:
+async def login(payload: UserLoginRequest, response: Response, request: Request, db: AsyncSession=Depends(get_session), _rate_limit=Depends(auth_rate_limiter)) -> AuthMessageResponse:
     """Login contract boundary with generic safe error responses (anti-enumeration)."""
     stmt = select(User).where(User.email==payload.email)
     user = (await db.execute(stmt)).scalar_one_or_none()
