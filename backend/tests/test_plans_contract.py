@@ -155,3 +155,38 @@ async def test_create_plan_impossible_guest_count(client: AsyncClient):
     }
     response = await client.post("/api/v1/plans", json=payload)
     assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_patch_plan_in_place_editing(client: AsyncClient):
+    future_date = (date.today() + timedelta(days=90)).isoformat()
+    create_res = await client.post(
+        "/api/v1/plans",
+        json={
+            "title": "Initial Goa Birthday",
+            "event_type": "birthday",
+            "event_date": future_date,
+            "location": "Goa, India",
+            "guest_count": 40,
+            "budget_amount": 100000.0,
+            "budget_currency": "INR"
+        },
+    )
+    plan_id = create_res.json()["id"]
+    plan_data = create_res.json()["plan_data"]
+
+    plan_data["timeline"][0]["status"] = "completed"
+    plan_data["vendor_checklist"][0]["status"] = "booked"
+
+    patch_res = await client.patch(
+        f"/api/v1/plans/{plan_id}",
+        json={
+            "title": "Updated Goa Birthday Celebration",
+            "plan_data": plan_data
+        },
+    )
+    assert patch_res.status_code == 200
+    updated = patch_res.json()
+
+    assert updated["title"] == "Updated Goa Birthday Celebration"
+    assert updated["plan_data"]["timeline"][0]["status"] == "completed"
+    assert updated["plan_data"]["vendor_checklist"][0]["status"] == "booked"
