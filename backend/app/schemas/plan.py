@@ -83,5 +83,5 @@ class PlanUpdateRequest(BaseModel):
     plan_data: GeneratedPlanContent | None = None
 
 class SectionRegenerateRequest(BaseModel):
-    section: Literal["budget", "timeline", "vendor_checklist", "personalized_ideas"]
+    section: Literal["budget", "timeline", "vendor_checklist", "personalized_ideas"] | None = None
     refinement_instruction: str | None = Field(default=None, max_length=500)

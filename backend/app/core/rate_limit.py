@@ -9,8 +9,11 @@ class SlidingWindowRateLimiter:
         self.window_seconds = window_seconds
         self.requests: dict[str, list[float]] = defaultdict(list)
     
+    def reset(self) -> None:
+        self.requests.clear()
+    
     async def __call__(self, request: Request) -> None:
-        client_ip: request.client.host if request.client else "unknown"
+        client_ip = request.client.host if request.client else "unknown"
         now = time.time()
         window_start = now - self.window_seconds
 

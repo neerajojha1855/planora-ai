@@ -27,7 +27,6 @@ Thumbs.db
 # Temporary Uploads
 uploads/
 temp/
-.github/
 OVERVIEW.md
 IMPLEMENTATION_PLAN.md
 .neon

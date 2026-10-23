@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Literal
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -155,7 +156,7 @@ async def get_plan(
 @router.post("/{plan_id}/regenerate/{section}", response_model=PlanResponse)
 async def regenerate_plan_section(
     plan_id: uuid.UUID,
-    section: str,
+    section: Literal["budget", "timeline", "vendor_checklist", "personalized_ideas"],
     payload: SectionRegenerateRequest | None = None,
     current_user: User = Depends(get_current_user),
     ai_planner: AIPlanner = Depends(get_ai_planner),
