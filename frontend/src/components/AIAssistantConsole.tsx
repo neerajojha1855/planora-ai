@@ -211,7 +211,7 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
               aria-label="Budget in INR"
               type="number"
               min={100}
-              step={1000}
+              step="any"
               required
               value={budget}
               onChange={(e) => setBudget(e.target.value === '' ? '' : Number(e.target.value))}
