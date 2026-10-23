@@ -14,13 +14,15 @@ import {
   Printer,
   Check,
 } from 'lucide-react'
-import type { PlanRecord } from '../types/planner'
+import type { GeneratedPlanContent, PlanRecord } from '../types/planner'
 
 interface Props {
   plan: PlanRecord
   onRequestRegenerate: (section: 'budget' | 'timeline' | 'vendor_checklist' | 'personalized_ideas') => void
   isRegenerating: boolean
   regeneratingSection: string | null
+  onUpdatePlan?: (updatedContent: GeneratedPlanContent) => Promise<void>
+  isSaving?: boolean
 }
 
 export const PlanDisplay: React.FC<Props> = ({
@@ -28,6 +30,8 @@ export const PlanDisplay: React.FC<Props> = ({
   onRequestRegenerate,
   isRegenerating,
   regeneratingSection,
+  onUpdatePlan,
+  isSaving = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'budget' | 'timeline' | 'vendors' | 'ideas'>('summary')
   const [completedMilestones, setCompletedMilestones] = useState<Record<number, boolean>>({})
@@ -36,15 +40,63 @@ export const PlanDisplay: React.FC<Props> = ({
 
   const content = plan.plan_content
 
-  const toggleMilestone = (idx: number) => {
-    setCompletedMilestones((prev) => ({ ...prev, [idx]: !prev[idx] }))
+  const toggleMilestone = async (idx: number) => {
+    const currentStatus = content.timeline[idx]?.status || (completedMilestones[idx] ? 'completed' : 'upcoming')
+    const newStatus = currentStatus === 'completed' ? 'upcoming' : 'completed'
+    setCompletedMilestones((prev) => ({ ...prev, [idx]: newStatus === 'completed' }))
+
+    if (onUpdatePlan) {
+      const updatedTimeline = content.timeline.map((item, i) =>
+        i === idx ? { ...item, status: newStatus as 'upcoming' | 'completed' } : item
+      )
+      await onUpdatePlan({
+        ...content,
+        timeline: updatedTimeline,
+      })
+    }
   }
 
-  const cycleVendorStatus = (idx: number) => {
-    const order = ['To Research', 'Contacted', 'Booked']
-    const current = vendorStatuses[idx] || 'To Research'
-    const nextIdx = (order.indexOf(current) + 1) % order.length
-    setVendorStatuses((prev) => ({ ...prev, [idx]: order[nextIdx] }))
+  const cycleVendorStatus = async (idx: number) => {
+    const order = ['to_research', 'contacted', 'booked'] as const
+    const current = (content.vendor_checklist[idx]?.status || vendorStatuses[idx] || 'to_research').toLowerCase()
+    const currentIdx = order.indexOf(current as 'to_research' | 'contacted' | 'booked')
+    const nextStatus = order[(currentIdx + 1) % order.length]
+
+    setVendorStatuses((prev) => ({ ...prev, [idx]: nextStatus }))
+
+    if (onUpdatePlan) {
+      const updatedVendors = content.vendor_checklist.map((v, i) =>
+        i === idx ? { ...v, status: nextStatus } : v
+      )
+      await onUpdatePlan({
+        ...content,
+        vendor_checklist: updatedVendors,
+      })
+    }
+  }
+
+  const handleActualCostChange = async (idx: number, newCostStr: string) => {
+    if (!onUpdatePlan) return
+    const cost = newCostStr.trim() === '' ? null : Math.max(0, parseFloat(newCostStr) || 0)
+    const updatedItems = content.budget.items.map((it, i) =>
+      i === idx ? { ...it, actual_cost: cost } : it
+    )
+    const newAllocated = updatedItems.reduce(
+      (sum, it) => sum + (it.actual_cost ?? it.estimated_cost),
+      0
+    )
+    const newContingency = Math.max(0, content.budget.total_budget - newAllocated)
+
+    const updatedContent: GeneratedPlanContent = {
+      ...content,
+      budget: {
+        ...content.budget,
+        items: updatedItems,
+        allocated_budget: newAllocated,
+        contingency_reserve: newContingency,
+      },
+    }
+    await onUpdatePlan(updatedContent)
   }
 
   const handleCopyMarkdown = () => {
@@ -92,6 +144,31 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Cloud Sync Status Indicator */}
+            {onUpdatePlan && (
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono transition-all ${
+                  isSaving
+                    ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300'
+                    : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                    <span className="hidden sm:inline">Saving to Cloud...</span>
+                    <span className="sm:hidden">Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">Saved to Cloud</span>
+                    <span className="sm:hidden">Saved</span>
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="text-right mr-2">
               <span className="text-xs text-gray-400 uppercase font-mono block">Budget Target</span>
               <span className="text-xl sm:text-2xl font-black text-amber-400">
@@ -224,6 +301,7 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
                   <th className="pb-3">Category</th>
                   <th className="pb-3">Priority</th>
                   <th className="pb-3 text-right">Estimated Cost</th>
+                  <th className="pb-3 text-right">Actual Cost (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#202033]">
@@ -242,6 +320,22 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
                     </td>
                     <td className="py-3 text-right font-mono font-semibold text-white">
                       ₹{item.estimated_cost.toLocaleString('en-IN')}
+                    </td>
+                    <td className="py-3 text-right">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="e.g. 50000"
+                        defaultValue={item.actual_cost !== null && item.actual_cost !== undefined ? item.actual_cost : ''}
+                        onBlur={(e) => handleActualCostChange(idx, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur()
+                          }
+                        }}
+                        className="w-28 text-right font-mono text-xs px-2.5 py-1 rounded-lg bg-[#0e0e1a] border border-[#2d2d4a] text-purple-300 focus:outline-none focus:border-purple-500"
+                        title="Click to enter actual incurred expense"
+                      />
                     </td>
                   </tr>
                 ))}
@@ -271,7 +365,7 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
 
           <div className="relative border-l-2 border-purple-500/30 ml-4 pl-6 space-y-6">
             {content.timeline.map((item, idx) => {
-              const isDone = completedMilestones[idx]
+              const isDone = item.status === 'completed' || Boolean(completedMilestones[idx])
               return (
                 <div
                   key={idx}
@@ -325,7 +419,8 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {content.vendor_checklist.map((v, idx) => {
-              const status = vendorStatuses[idx] || 'To Research'
+              const rawStatus = (v.status || vendorStatuses[idx] || 'to_research').toLowerCase()
+              const displayStatus = rawStatus === 'booked' ? 'Booked' : rawStatus === 'contacted' ? 'Contacted' : 'To Research'
               return (
                 <div key={idx} className="glass-panel rounded-xl p-5 border border-[#26263f] space-y-3">
                   <div className="flex items-center justify-between">
@@ -335,13 +430,13 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
                     <button
                       onClick={() => cycleVendorStatus(idx)}
                       className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        status === 'Booked' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                        status === 'Contacted' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                        displayStatus === 'Booked' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                        displayStatus === 'Contacted' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
                         'bg-gray-800 text-gray-300 border border-gray-700'
                       }`}
                       title="Click to cycle status"
                     >
-                      {status}
+                      {displayStatus}
                     </button>
                   </div>
                   <h4 className="text-base font-bold text-white">{v.role}</h4>
