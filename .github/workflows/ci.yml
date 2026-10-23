@@ -10,6 +10,20 @@ jobs:
   backend-test:
     name: Backend Test & Security Hardening
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: planora_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: backend
@@ -29,10 +43,16 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio
 
+      - name: Run Database Migrations
+        env:
+          DATABASE_URL: "postgresql+psycopg://test:test@localhost:5432/planora_test"
+        run: python -m alembic upgrade head
+
       - name: Run Pytest Suite
         env:
           DATABASE_URL: "postgresql+psycopg://test:test@localhost:5432/planora_test"
           SESSION_COOKIE_SECURE: "false"
+          SESSION_SECRET_KEY: "ci-secret-key-that-is-at-least-32-bytes-long"
         run: |
           python -m pytest -v
 
