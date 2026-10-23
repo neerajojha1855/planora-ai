@@ -2,6 +2,80 @@ import type { EventBrief, GeneratedPlanContent, PlanRecord, AuthUser } from '../
 
 const API_BASE = '/api/v1'
 
+export async function login(email: string, password: string): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'include',
+    body: JSON.stringify({ email, password }),
+  })
+
+  if(!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail || 'Invalid email or password')
+  }
+
+  const user = await getCurrentUser()
+  if(!user) throw new Error('Failed to retrieve user profile after login')
+  return user
+}
+
+export async function register(email: string, password: string, fullName: string): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'include',
+    body: JSON.stringify({
+      email,
+      password,
+      full_name: fullName,
+    }),
+  })
+
+  if(!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail || 'Registration failed. Please check your credentials')
+  }
+
+  const user = await getCurrentUser()
+  if(!user) throw new Error('Failed to retrieve user profile after registration')
+  return user
+}
+
+export async function loginAsGuest(): Promise<AuthUser> {
+  const credentials = {
+    email: 'john.doe@planora.ai',
+    password: 'GuestPassword123',
+  }
+
+  const loginRes = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'include',
+    body: JSON.stringify(credentials),
+  })
+
+  if(!loginRes.ok) {
+    const regRes = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({
+        ...credentials,
+        full_name: 'John Doe',
+      }),
+    })
+    if (!regRes.ok) {
+      const errorData = await regRes.json().catch(() => ({}))
+      throw new Error(errorData.detail || 'Guest auto-registration failed')
+    }
+  }
+
+  const user = await getCurrentUser()
+  if(!user) throw new Error('Guest authentication failed')
+  return user
+}
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' })
@@ -10,38 +84,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   } catch {
     return null
   }
-}
-
-export async function loginDemoUser(): Promise<AuthUser> {
-  const credentials = {
-    email: 'demo.planner@planora.ai',
-    password: 'DemoPassword123!',
-  }
-
-  // Attempt login
-  const loginRes = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(credentials),
-  })
-
-  // If user does not exist yet in database, register them
-  if (!loginRes.ok) {
-    await fetch(`${API_BASE}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        ...credentials,
-        full_name: 'Alex Morgan (Demo)',
-      }),
-    })
-  }
-
-  const user = await getCurrentUser()
-  if (!user) throw new Error('Demo authentication failed.')
-  return user
 }
 
 export async function logoutUser(): Promise<void> {
@@ -54,7 +96,7 @@ export async function logoutUser(): Promise<void> {
 export async function createPlan(brief: EventBrief): Promise<PlanRecord> {
   const user = await getCurrentUser()
   if (!user) {
-    await loginDemoUser()
+    await loginAsGuest()
   }
 
   const payload = {

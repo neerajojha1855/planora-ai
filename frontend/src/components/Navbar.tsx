@@ -1,5 +1,5 @@
 import React from 'react'
-import { Cpu, UserCheck, LogOut, FolderHeart } from 'lucide-react'
+import { Cpu, LogOut, FolderHeart } from 'lucide-react'
 import logoImg from '../assets/favicon.png'
 import type { AuthUser } from '../types/planner'
 
@@ -7,18 +7,14 @@ interface Props {
   user: AuthUser | null
   savedPlansCount: number
   onOpenSavedPlans: () => void
-  onLoginDemo: () => void
   onLogout: () => void
-  isAuthLoading: boolean
 }
 
 export const Navbar: React.FC<Props> = ({
   user,
   savedPlansCount,
   onOpenSavedPlans,
-  onLoginDemo,
   onLogout,
-  isAuthLoading,
 }) => {
   return (
     <header className="sticky top-0 z-50 glass-panel border-b border-[#26263f]">
@@ -36,7 +32,7 @@ export const Navbar: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* AI & Platform Indicators + Saved Plans + Demo Auth */}
+        {/* AI Indicator + Saved Plans + Sign Out */}
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1a1a2e] border border-[#2d2d4a] text-xs font-medium text-gray-300">
             <Cpu className="w-3.5 h-3.5 text-purple-400" />
@@ -61,8 +57,7 @@ export const Navbar: React.FC<Props> = ({
             </span>
           </button>
 
-          {/* Demo Sign-in / Profile Control */}
-          {user ? (
+          {user && (
             <div className="flex items-center gap-2 pl-2 border-l border-[#26263f]">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-950/40 border border-purple-500/30 text-xs text-purple-300">
                 <span className="w-2 h-2 rounded-full bg-purple-400"></span>
@@ -76,15 +71,6 @@ export const Navbar: React.FC<Props> = ({
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
-          ) : (
-            <button
-              onClick={onLoginDemo}
-              disabled={isAuthLoading}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-purple-600/30 border border-purple-500/40 hover:bg-purple-600/50 text-purple-200 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-purple-400" />
-              <span>{isAuthLoading ? 'Signing in...' : 'Demo Sign In'}</span>
-            </button>
           )}
         </div>
       </div>

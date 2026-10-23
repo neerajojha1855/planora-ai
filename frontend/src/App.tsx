@@ -5,12 +5,30 @@ import { AIThinkingIndicator } from './components/AIThinkingIndicator'
 import { PlanDisplay } from './components/PlanDisplay'
 import { SavedPlansDrawer } from './components/SavedPlansDrawer'
 import { RegenerationModal } from './components/RegenerationModal'
-import { createPlan, regenerateSection, getCurrentUser, loginDemoUser, logoutUser, listPlans } from './services/api'
+import { LoginScreen } from './components/LoginScreen'
+import { RegisterScreen } from './components/RegisterScreen'
+import {
+  createPlan,
+  regenerateSection,
+  getCurrentUser,
+  login,
+  register as registerUser,
+  loginAsGuest,
+  logoutUser,
+  listPlans,
+} from './services/api'
 import type { EventBrief, PlanRecord, AuthUser } from './types/planner'
+
+type AuthView = 'login' | 'register' | 'planner'
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null)
-  const [isAuthLoading, setIsAuthLoading] = useState(false)
+  const [currentView, setCurrentView] = useState<AuthView>(() => {
+    const path = window.location.pathname
+    if (path === '/register') return 'register'
+    return 'login'
+  })
+  const [isGuestLoading, setIsGuestLoading] = useState(false)
   const [savedPlans, setSavedPlans] = useState<PlanRecord[]>([])
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [currentPlan, setCurrentPlan] = useState<PlanRecord | null>(null)
@@ -18,6 +36,26 @@ function App() {
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [regenModalSection, setRegenModalSection] = useState<'budget' | 'timeline' | 'vendor_checklist' | 'personalized_ideas' | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const navigateTo = (view: AuthView) => {
+    setCurrentView(view)
+    const path = view === 'planner' ? '/' : `/${view}`
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path)
+    }
+  }
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname
+      if (path === '/register') setCurrentView('register')
+      else if (path === '/login') setCurrentView('login')
+      else if (currentUser) setCurrentView('planner')
+      else setCurrentView('login')
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [currentUser])
 
   const refreshPlans = async () => {
     const plans = await listPlans()
@@ -29,26 +67,35 @@ function App() {
 
   useEffect(() => {
     getCurrentUser().then((user) => {
-      setCurrentUser(user)
       if (user) {
+        setCurrentUser(user)
+        setCurrentView('planner')
         listPlans().then((plans) => {
           setSavedPlans(plans)
           if (plans.length > 0) setCurrentPlan(plans[0])
         })
+      } else {
+        const path = window.location.pathname
+        setCurrentView(path === '/register' ? 'register' : 'login')
       }
     })
   }, [])
 
-  const handleLoginDemo = async () => {
-    setIsAuthLoading(true)
+  const handleLoginSuccess = async (user: AuthUser) => {
+    setCurrentUser(user)
+    navigateTo('planner')
+    await refreshPlans()
+  }
+
+  const handleGuestLogin = async () => {
+    setIsGuestLoading(true)
     try {
-      const user = await loginDemoUser()
-      setCurrentUser(user)
-      await refreshPlans()
+      const user = await loginAsGuest()
+      await handleLoginSuccess(user)
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Demo sign-in failed')
+      setErrorMessage(err instanceof Error ? err.message : 'Guest login failed.')
     } finally {
-      setIsAuthLoading(false)
+      setIsGuestLoading(false)
     }
   }
 
@@ -57,6 +104,7 @@ function App() {
     setCurrentUser(null)
     setSavedPlans([])
     setCurrentPlan(null)
+    navigateTo('login')
   }
 
   const handleCreatePlan = async (brief: EventBrief) => {
@@ -65,10 +113,6 @@ function App() {
     try {
       const plan = await createPlan(brief)
       setCurrentPlan(plan)
-      if (!currentUser) {
-        const u = await getCurrentUser()
-        setCurrentUser(u)
-      }
       await refreshPlans()
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Error communicating with AI Planning service.')
@@ -96,15 +140,38 @@ function App() {
     }
   }
 
+  // 1. Render Login Screen
+  if (currentView === 'login' && !currentUser) {
+    return (
+      <LoginScreen
+        onLoginSuccess={handleLoginSuccess}
+        onNavigateToRegister={() => navigateTo('register')}
+        onLoginAsGuest={handleGuestLogin}
+        isGuestLoading={isGuestLoading}
+        onLogin={login}
+      />
+    )
+  }
+
+  // 2. Render Register Screen
+  if (currentView === 'register' && !currentUser) {
+    return (
+      <RegisterScreen
+        onRegisterSuccess={handleLoginSuccess}
+        onNavigateToLogin={() => navigateTo('login')}
+        onRegister={registerUser}
+      />
+    )
+  }
+
+  // 3. Render Main Event Planner Workspace
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0b14] text-white selection:bg-purple-500 selection:text-white">
       <Navbar
         user={currentUser}
         savedPlansCount={savedPlans.length}
         onOpenSavedPlans={() => setIsDrawerOpen(true)}
-        onLoginDemo={handleLoginDemo}
         onLogout={handleLogout}
-        isAuthLoading={isAuthLoading}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
