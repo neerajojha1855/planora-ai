@@ -26,9 +26,8 @@ class Settings(BaseSettings):
     session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
 
     # ai provider
-    openrouter_api_key: str = ""
-    openrouter_model_name: str = "xingchen-agi/xing4.0-29b-a4b:free"
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    gemini_api_key: str = ""
+    gemini_model_name: str = "gemini-2.5-flash"
     ai_request_timeout_seconds: int = 60
     ai_max_retries: int = 2
 
