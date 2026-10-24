@@ -1,0 +1,13 @@
+fastapi
+pydantic[email]
+pydantic-settings
+sqlalchemy[asyncio]
+pwdlib[argon2]
+google-genai
+python-dotenv
+alembic
+pytest
+pytest-asyncio
+httpx
+psycopg[binary]
+uvicorn

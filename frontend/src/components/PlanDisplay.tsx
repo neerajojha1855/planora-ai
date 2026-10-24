@@ -147,6 +147,7 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
             {/* Cloud Sync Status Indicator */}
             {onUpdatePlan && (
               <div
+                aria-live="polite"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono transition-all ${
                   isSaving
                     ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300'
@@ -200,7 +201,7 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-[#26263f] pb-3">
+      <div role="tablist" aria-label="Celebration Plan Sections" className="flex flex-wrap gap-2 border-b border-[#26263f] pb-3">
         {[
           { id: 'summary' as const, label: 'Executive Summary', icon: Sparkles },
           { id: 'budget' as const, label: 'Smart Budget', icon: IndianRupee },
@@ -213,6 +214,10 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`panel-${tab.id}`}
+              id={`tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 isActive
@@ -369,8 +374,18 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
               return (
                 <div
                   key={idx}
+                  role="checkbox"
+                  aria-checked={isDone}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      toggleMilestone(idx)
+                    }
+                  }}
                   onClick={() => toggleMilestone(idx)}
-                  className="relative group cursor-pointer"
+                  className="relative group cursor-pointer focus:outline-none"
+                  aria-label={`Milestone: ${item.title}. ${isDone ? 'Completed' : 'Upcoming'}`}
                 >
                   <span className={`absolute -left-[31px] top-2 w-3.5 h-3.5 rounded-full ring-4 ring-[#131322] transition-colors ${
                     isDone ? 'bg-emerald-400' : 'bg-purple-500'
