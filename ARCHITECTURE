@@ -1,0 +1,112 @@
+# Planora AI — Architecture Specification
+
+This document outlines the architectural patterns, database schemas, state transitions, and security boundaries implemented in Planora AI.
+
+---
+
+## 1. System Topology
+
+```mermaid
+graph TD
+    Client[Client Browser / SPA] -->|HTTPS| VercelEdge[Vercel Edge Network]
+    VercelEdge -->|Static Assets| Frontend[React 19 SPA]
+    VercelEdge -->|/api/v1/*| ServerlessGateway[FastAPI Serverless Function]
+
+    subgraph Middleware Pipeline
+        ServerlessGateway --> RateLimiter[Sliding Window Rate Limiter]
+        RateLimiter --> PayloadGuard[2MB Payload Limiter]
+        PayloadGuard --> SecurityHeaders[Security Headers Middleware]
+    end
+
+    subgraph Service Layer
+        SecurityHeaders --> AuthRouter[Auth Router]
+        SecurityHeaders --> PlansRouter[Plans Router]
+
+        AuthRouter --> SessionService[Session & User Service]
+        PlansRouter --> PlanService[Plan Orchestration Service]
+
+        SessionService --> Database[(Neon PostgreSQL)]
+        PlanService --> Database
+    end
+
+    subgraph AI Engine
+        PlanService --> AIPlannerInterface[AI Planner Interface]
+        AIPlannerInterface -->|Primary Provider| GeminiAdapter[Gemini 2.5 Flash Adapter]
+        AIPlannerInterface -->|Fallback Provider| MockAdapter[Deterministic Mock Adapter]
+    end
+```
+
+## 2. Database Schema
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    USERS ||--o{ SESSIONS : "establishes"
+    USERS ||--o{ PLANS : "creates"
+
+    USERS {
+        uuid id PK
+        string email UK
+        string password_hash
+        string full_name
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SESSIONS {
+        uuid id PK
+        uuid user_id FK
+        string token_hash UK
+        string ip_address
+        string user_agent
+        timestamp expires_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PLANS {
+        uuid id PK
+        uuid user_id FK
+        string title
+        string event_type
+        date event_date
+        string location
+        int guest_count
+        numeric budget_amount
+        string budget_currency
+        jsonb priorities
+        string style
+        string status
+        jsonb plan_data
+        jsonb generation_metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+```
+
+### Sequence Diagram: In-Place Section Regeneration
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Host as Event Host
+    participant UI as React UI (PlanDisplay)
+    participant API as FastAPI Gateway
+    participant DB as Neon PostgreSQL
+    participant AI as Gemini 2.5 Flash
+
+    Host->>UI: Triggers section regeneration with refinement notes
+    UI->>API: POST /api/v1/plans/{id}/regenerate/{section}
+    API->>DB: Query plan record and verify user ownership
+    alt Ownership Failure or Missing Record
+        API-->>UI: HTTP 404 Not Found (Anti-Enumeration)
+    else Verification Success
+        API->>AI: Generate isolated section with contextual brief
+        AI-->>API: Validated section JSON payload
+        API->>DB: Update target section within plan_data JSONB (commit)
+        API-->>UI: HTTP 200 with updated PlanResponse
+        UI->>Host: Render updated section; preserve manual edits in other sections
+    end
+```
