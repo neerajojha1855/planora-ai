@@ -207,3 +207,82 @@ export async function listPlans(): Promise<PlanRecord[]> {
   }))
 }
 
+export const authEvents = new EventTarget()
+
+export async function getPlan(planId: string): Promise<PlanRecord> {
+  const res = await fetch(`${API_BASE}/plans/${planId}`, {
+    credentials: 'include',
+  })
+  if(res.status == 401) {
+    authEvents.dispatchEvent(new CustomEvent('auth_expired'))
+    throw new Error('Your session has expired. Please sign in again')
+  }
+  if(!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail || 'Failed to retrieve plan details')
+  }
+  const item: RawPlanResponse = await res.json()
+
+  return {
+    id: item.id,
+    user_id: item.user_id,
+    event_type: item.event_type,
+    brief: {
+      event_type: item.event_brief.event_type,
+      location: item.event_brief.location,
+      event_date: item.event_brief.event_date,
+      guest_count: item.event_brief.guest_count,
+      budget: item.event_brief.budget_amount,
+      currency: item.event_brief.budget_currency || 'INR',
+      notes: item.event_brief.additional_context,
+    },
+    plan_content: item.plan_data,
+    created_at: item.created_at,
+    updated_at: item.updated_at || item.created_at,
+  }
+}
+
+export async function updatePlan(
+  planId: string,
+  updates: { title?: string; plan_content?: GeneratedPlanContent }
+): Promise<PlanRecord> {
+  const res = await fetch(`${API_BASE}/plans/${planId}`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'include',
+    body: JSON.stringify({
+      title: updates.title,
+      plan_data: updates.plan_content,
+    }),
+  })
+
+  if(res.status === 401) {
+    authEvents.dispatchEvent(new CustomEvent('auth_expired'))
+    throw new Error('Your session has expired. Please sign in again')
+  }
+
+  if(!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail || 'Failed to save updates to the plan')
+  }
+
+  const item: RawPlanResponse = await res.json()
+
+  return {
+    id: item.id,
+    user_id: item.user_id,
+    event_type: item.event_type,
+    brief: {
+      event_type: item.event_brief.event_type,
+      location: item.event_brief.location,
+      event_date: item.event_brief.event_date,
+      guest_count: item.event_brief.guest_count,
+      budget: item.event_brief.budget_amount,
+      currency: item.event_brief.budget_currency || 'INR',
+      notes: item.event_brief.additional_context,
+    },
+    plan_content: item.plan_data,
+    created_at: item.created_at,
+    updated_at: item.updated_at || item.created_at,
+  }
+}

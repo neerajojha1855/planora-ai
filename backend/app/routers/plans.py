@@ -11,6 +11,7 @@ from ..schemas.plan import (
     GeneratedPlanContent,
     PlanResponse,
     PlanStatus,
+    PlanUpdateRequest,
     SectionRegenerateRequest
 )
 from ..services.ai_planner import AIPlanner
@@ -214,4 +215,55 @@ async def regenerate_plan_section(
         plan_data=GeneratedPlanContent.model_validate(plan_record.plan_data),
         created_at=plan_record.created_at,
         updated_at=plan_record.updated_at,
-    )
+    )
+
+@router.patch("/{plan_id}", response_model=PlanResponse)
+async def update_plan(
+    plan_id: uuid.UUID,
+    payload: PlanUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+) -> PlanResponse:
+    """Updates a plan's title or generated plan content in-place with user ownership enforcement"""
+    stmt = select(PlanModel).where(
+        PlanModel.id == plan_id,
+        PlanModel.user_id == current_user.id
+    )
+    plan_record = (await db.execute(stmt)).scalar_one_or_none()
+    if not plan_record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found")
+    
+    if payload.title is not None:
+        plan_record.title = payload.title
+    if payload.plan_data is not None:
+        plan_record.plan_data = payload.plan_data.model_dump()
+    
+    plan_record.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(plan_record)
+
+    brief = EventBriefCreate(
+        title=plan_record.title,
+        event_type=plan_record.event_type,
+        event_date=plan_record.event_date,
+        location=plan_record.location,
+        guest_count=plan_record.guest_count,
+        budget_amount=float(plan_record.budget_amount),
+        budget_currency=plan_record.budget_currency,
+        priorities=plan_record.priorities,
+        style=plan_record.style,
+        dietary_accessibility_notes=plan_record.dietary_accessibility_notes,
+        additional_context=plan_record.additional_context
+    )
+
+    return PlanResponse(
+        id=plan_record.id,
+        user_id=plan_record.user_id,
+        title=plan_record.title,
+        event_type=plan_record.event_type,
+        status=PlanStatus(plan_record.status),
+        event_brief=brief,
+        plan_data=GeneratedPlanContent.model_validate(plan_record.plan_data) if plan_record.plan_data else None,
+        created_at=plan_record.created_at,
+        updated_at=plan_record.updated_at
+    )

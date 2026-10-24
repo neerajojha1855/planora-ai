@@ -78,6 +78,9 @@ class PlanResponse(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
 
+class PlanUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=150)
+    plan_data: GeneratedPlanContent | None = None
 
 class SectionRegenerateRequest(BaseModel):
     section: Literal["budget", "timeline", "vendor_checklist", "personalized_ideas"]

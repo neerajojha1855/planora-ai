@@ -16,8 +16,11 @@ import {
   loginAsGuest,
   logoutUser,
   listPlans,
+  getPlan,
+  updatePlan,
+  authEvents,
 } from './services/api'
-import type { EventBrief, PlanRecord, AuthUser } from './types/planner'
+import type { EventBrief, PlanRecord, AuthUser, GeneratedPlanContent } from './types/planner'
 
 type AuthView = 'login' | 'register' | 'planner'
 
@@ -34,6 +37,8 @@ function App() {
   const [currentPlan, setCurrentPlan] = useState<PlanRecord | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const [isSavingPlan, setIsSavingPlan] = useState(false)
+  const [isPlanLoading, setIsPlanLoading] = useState(false)
   const [regenModalSection, setRegenModalSection] = useState<'budget' | 'timeline' | 'vendor_checklist' | 'personalized_ideas' | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -66,6 +71,18 @@ function App() {
   }
 
   useEffect(() => {
+    const handleAuthExpired = () => {
+      setCurrentUser(null)
+      setSavedPlans([])
+      setCurrentPlan(null)
+      setErrorMessage('Your session has expired. Please sign in again.')
+      navigateTo('login')
+    }
+    authEvents.addEventListener('auth_expired', handleAuthExpired)
+    return () => authEvents.removeEventListener('auth_expired', handleAuthExpired)
+  }, [])
+
+  useEffect(() => {
     getCurrentUser().then((user) => {
       if (user) {
         setCurrentUser(user)
@@ -88,6 +105,7 @@ function App() {
   }
 
   const handleGuestLogin = async () => {
+    if (isGuestLoading) return
     setIsGuestLoading(true)
     try {
       const user = await loginAsGuest()
@@ -108,6 +126,7 @@ function App() {
   }
 
   const handleCreatePlan = async (brief: EventBrief) => {
+    if (isLoading || isRegenerating || isSavingPlan) return
     setIsLoading(true)
     setErrorMessage(null)
     try {
@@ -122,7 +141,7 @@ function App() {
   }
 
   const handleConfirmRegenerate = async (instruction: string) => {
-    if (!currentPlan || !regenModalSection) return
+    if (!currentPlan || !regenModalSection || isRegenerating || isLoading || isSavingPlan) return
     setIsRegenerating(true)
     const section = regenModalSection
     setRegenModalSection(null)
@@ -137,6 +156,42 @@ function App() {
       setErrorMessage(err instanceof Error ? err.message : 'Error regenerating section.')
     } finally {
       setIsRegenerating(false)
+    }
+  }
+
+  const handleUpdatePlan = async (updatedContent: GeneratedPlanContent) => {
+    if (!currentPlan || isSavingPlan) return
+    setIsSavingPlan(true)
+    const optimisticPlan: PlanRecord = {
+      ...currentPlan,
+      plan_content: updatedContent,
+      updated_at: new Date().toISOString(),
+    }
+    setCurrentPlan(optimisticPlan)
+    try {
+      const updated = await updatePlan(currentPlan.id, { plan_content: updatedContent })
+      setCurrentPlan(updated)
+      setSavedPlans((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to save changes to the cloud.')
+      // Rollback to prior plan state if update failed
+      setCurrentPlan(currentPlan)
+    } finally {
+      setIsSavingPlan(false)
+    }
+  }
+
+  const handleSelectSavedPlan = async (selectedPlan: PlanRecord) => {
+    if (isPlanLoading) return
+    setIsPlanLoading(true)
+    setIsDrawerOpen(false)
+    try {
+      const fullPlan = await getPlan(selectedPlan.id)
+      setCurrentPlan(fullPlan)
+    } catch {
+      setCurrentPlan(selectedPlan)
+    } finally {
+      setIsPlanLoading(false)
     }
   }
 
@@ -191,12 +246,21 @@ function App() {
 
         {isLoading && <AIThinkingIndicator />}
 
-        {currentPlan && !isLoading && (
+        {isPlanLoading && (
+          <div className="p-8 rounded-2xl glass-panel border border-purple-500/30 flex items-center justify-center gap-3 text-purple-300">
+            <span className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin"></span>
+            <span className="font-mono text-sm">Loading celebration blueprint...</span>
+          </div>
+        )}
+
+        {currentPlan && !isLoading && !isPlanLoading && (
           <PlanDisplay
             plan={currentPlan}
             onRequestRegenerate={(sec) => setRegenModalSection(sec)}
             isRegenerating={isRegenerating}
             regeneratingSection={regenModalSection}
+            onUpdatePlan={handleUpdatePlan}
+            isSaving={isSavingPlan}
           />
         )}
       </main>
@@ -206,7 +270,7 @@ function App() {
         plans={savedPlans}
         activePlanId={currentPlan?.id}
         onClose={() => setIsDrawerOpen(false)}
-        onSelectPlan={(plan) => setCurrentPlan(plan)}
+        onSelectPlan={handleSelectSavedPlan}
       />
 
       <RegenerationModal

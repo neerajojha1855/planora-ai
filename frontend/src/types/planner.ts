@@ -14,7 +14,9 @@ export interface BudgetItem {
   category: string
   item_name: string
   estimated_cost: number
+  actual_cost?: number | null
   priority: 'high' | 'medium' | 'low'
+  notes?: string | null
 }
 
 export interface BudgetBreakdown {
@@ -31,6 +33,7 @@ export interface TimelineMilestone {
   title: string
   description: string
   due_date_offset_days: number
+  status?: 'upcoming' | 'in_progress' | 'completed'
 }
 
 export interface VendorChecklistItem {
@@ -40,6 +43,7 @@ export interface VendorChecklistItem {
   estimated_budget: number
   booking_deadline_weeks: number
   questions_to_ask: string[]
+  status?: 'to_research' | 'contacted' | 'booked' | 'not_needed'
 }
 
 export interface PersonalizedIdea {
