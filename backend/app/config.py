@@ -35,14 +35,14 @@ class Settings(BaseSettings):
     ai_request_timeout_seconds: int = 60
     ai_max_retries: int = 2
 
-    @field_validator("session_cookie_secure", mode="before")
+    @field_validator("session_cookie_secure", mode="after")
     @classmethod
-    def auto_secure_cookie(cls, v: bool | None, info: Any) -> bool:
+    def auto_secure_cookie(cls, v: bool, info: Any) -> bool:
         """Enforces Secure cookie flag when running in production environment."""
         if info.data.get("environment") == "production":
             return True
-        
-        return bool(v) if v is not None else False
+        return v
+
     
     model_config = SettingsConfigDict(
         env_file=(".env.local", ".env", "backend/.env.local", "backend/.env", "../.env.local", "../.env"),
