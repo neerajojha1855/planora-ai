@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { X, Calendar, ArrowRight, Sparkles, FolderHeart } from 'lucide-react'
 import type { PlanRecord } from '../types/planner'
 
@@ -17,24 +17,42 @@ export const SavedPlansDrawer: React.FC<Props> = ({
   onClose,
   onSelectPlan,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="saved-plans-title"
+      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+    >
       <div className="glass-panel w-full max-w-md h-full border-l border-[#26263f] p-6 flex flex-col justify-between overflow-y-auto">
         <div>
           <div className="flex items-center justify-between pb-4 border-b border-[#26263f] mb-6">
             <div className="flex items-center gap-2.5">
               <FolderHeart className="w-5 h-5 text-purple-400" />
-              <h3 className="text-lg font-bold text-white">Your Saved Blueprints</h3>
+              <h3 id="saved-plans-title" className="text-lg font-bold text-white">Your Saved Blueprints</h3>
             </div>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-[#1a1a2e]"
+              aria-label="Close saved plans drawer"
+              className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-[#1a1a2e] focus:outline-none focus:ring-2 focus:ring-purple-400"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
+
 
           {plans.length === 0 ? (
             <div className="text-center py-12 text-gray-400">

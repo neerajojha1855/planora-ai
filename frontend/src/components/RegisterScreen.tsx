@@ -51,9 +51,17 @@ export const RegisterScreen: React.FC<Props> = ({
         </div>
 
         {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between"
+          >
             <span>{errorMessage}</span>
-            <button onClick={() => setErrorMessage(null)} className="underline font-bold text-[11px] cursor-pointer">
+            <button
+              onClick={() => setErrorMessage(null)}
+              aria-label="Dismiss error message"
+              className="underline font-bold text-[11px] cursor-pointer"
+            >
               Dismiss
             </button>
           </div>
@@ -105,7 +113,8 @@ export const RegisterScreen: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-white cursor-pointer"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 rounded"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>

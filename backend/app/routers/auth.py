@@ -1,3 +1,5 @@
+"""Authentication router handling registration, login, logout, and session profile."""
+
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status, Cookie, Depends, Request, Response
@@ -20,6 +22,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 settings = get_settings()
 
 def _set_session_cookie(response: Response, raw_token: str, max_age: int) -> None:
+    """Configures secure HTTP-only session cookie on the outgoing HTTP response."""
     response.set_cookie(
         key=settings.session_cookie_name,
         value=raw_token,
@@ -29,6 +32,7 @@ def _set_session_cookie(response: Response, raw_token: str, max_age: int) -> Non
         samesite=settings.session_cookie_samesite,
         path="/"
     )
+
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserRegisterRequest, response: Response, request: Request, db: AsyncSession=Depends(get_session), _rate_limit=Depends(auth_rate_limiter)) -> UserResponse:

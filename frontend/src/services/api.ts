@@ -2,6 +2,12 @@ import type { EventBrief, GeneratedPlanContent, PlanRecord, AuthUser } from '../
 
 const API_BASE = '/api/v1'
 
+/**
+ * Authenticates user credentials and establishes an HTTP-only session cookie.
+ * @param email - User email address
+ * @param password - Plaintext password
+ * @returns Authenticated user profile
+ */
 export async function login(email: string, password: string): Promise<AuthUser> {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
@@ -20,6 +26,13 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   return user
 }
 
+/**
+ * Registers a new user account with validated credentials and creates active session.
+ * @param email - User email address
+ * @param password - Secure password meeting complexity rules
+ * @param fullName - User's full display name
+ * @returns Newly created user profile
+ */
 export async function register(email: string, password: string, fullName: string): Promise<AuthUser> {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
@@ -41,6 +54,7 @@ export async function register(email: string, password: string, fullName: string
   if(!user) throw new Error('Failed to retrieve user profile after registration')
   return user
 }
+
 
 export async function loginAsGuest(): Promise<AuthUser> {
   const credentials = {

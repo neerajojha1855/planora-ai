@@ -32,6 +32,7 @@ class GeminiAdapter(AIPlanner):
         self.max_retries = settings.ai_max_retries
 
     async def _call_gemini(self, prompt_text: str) -> str:
+        """Dispatches an asynchronous request to Gemini with JSON generationConfig enforced."""
         url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
             f"?key={self.api_key}"
@@ -58,6 +59,8 @@ class GeminiAdapter(AIPlanner):
     async def generate_plan(
         self, brief: EventBriefCreate
     ) -> tuple[GeneratedPlanContent, dict[str, Any]]:
+        """Synthesizes an end-to-end event plan with schema validation and automatic mock fallback."""
+
         full_prompt = (
             f"{PLANNER_SYSTEM_PROMPT}\n\n"
             f"EVENT BRIEF:\n"
@@ -109,7 +112,9 @@ class GeminiAdapter(AIPlanner):
         section_name: str,
         instruction: str | None = None,
     ) -> tuple[Any, dict[str, Any]]:
+        """Selectively re-prompts Gemini to refine a specific section without mutating other plan state."""
         user_prompt = SECTION_REGENERATION_PROMPT.format(
+
             section_name=section_name,
             title=brief.title,
             event_type=brief.event_type.value,

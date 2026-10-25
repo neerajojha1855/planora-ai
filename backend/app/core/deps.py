@@ -1,3 +1,5 @@
+"""FastAPI dependency injection utilities for user authentication and session resolution."""
+
 from datetime import datetime, timezone
 from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy import select
@@ -10,7 +12,11 @@ from .security import hash_session_token
 
 settings = get_settings()
 
-async def get_optional_current_user(planora_session: str | None=Cookie(default=None, alias=settings.session_cookie_name), db: AsyncSession=Depends(get_session)) -> User | None:
+async def get_optional_current_user(
+    planora_session: str | None = Cookie(default=None, alias=settings.session_cookie_name),
+    db: AsyncSession = Depends(get_session)
+) -> User | None:
+    """Resolves authenticated user from session cookie if present, valid, and unexpired."""
     if not planora_session:
         return None
     
@@ -21,8 +27,8 @@ async def get_optional_current_user(planora_session: str | None=Cookie(default=N
         select(SessionModel)
         .options(selectinload(SessionModel.user))
         .where(
-            SessionModel.token_hash==token_hash,
-            SessionModel.expires_at>now,
+            SessionModel.token_hash == token_hash,
+            SessionModel.expires_at > now,
         )
     )
     result = await db.execute(stmt)
@@ -33,8 +39,16 @@ async def get_optional_current_user(planora_session: str | None=Cookie(default=N
     
     return session_record.user
 
-async def get_current_user(user: User | None=Depends(get_optional_current_user)) -> User:
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required. Please sign in.")
+async def get_current_user(user: User | None = Depends(get_optional_current_user)) -> User:
+    """Enforces active user authentication on protected endpoint dependencies.
     
-    return user
+    Raises:
+        HTTPException: 401 Unauthorized if no valid user session is detected.
+    """
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please sign in."
+        )
+    
+    return user

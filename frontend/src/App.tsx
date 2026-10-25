@@ -222,6 +222,14 @@ function App() {
   // 3. Render Main Event Planner Workspace
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0b14] text-white selection:bg-purple-500 selection:text-white">
+      {/* Accessible skip link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-purple-600 focus:text-white focus:rounded-lg focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-amber-300"
+      >
+        Skip to main content
+      </a>
+
       <Navbar
         user={currentUser}
         savedPlansCount={savedPlans.length}
@@ -229,18 +237,24 @@ function App() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10 focus:outline-none">
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between"
+          >
             <span>{errorMessage}</span>
             <button
               onClick={() => setErrorMessage(null)}
+              aria-label="Dismiss error message"
               className="text-xs font-bold underline cursor-pointer"
             >
               Dismiss
             </button>
           </div>
         )}
+
 
         <AIAssistantConsole onSubmit={handleCreatePlan} isLoading={isLoading} />
 

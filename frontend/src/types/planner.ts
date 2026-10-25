@@ -1,5 +1,11 @@
+/**
+ * Supported celebration domain types in Planora AI.
+ */
 export type EventType = 'wedding' | 'birthday' | 'community'
 
+/**
+ * High-level user input specifications for generating celebration blueprints.
+ */
 export interface EventBrief {
   event_type: EventType
   location: string
@@ -10,6 +16,9 @@ export interface EventBrief {
   notes?: string
 }
 
+/**
+ * Individual expense line-item within a category budget.
+ */
 export interface BudgetItem {
   category: string
   item_name: string
@@ -19,6 +28,9 @@ export interface BudgetItem {
   notes?: string | null
 }
 
+/**
+ * Complete balanced budget allocation breakdown with contingency reserve.
+ */
 export interface BudgetBreakdown {
   total_budget: number
   allocated_budget: number
@@ -27,6 +39,7 @@ export interface BudgetBreakdown {
   categories: string[]
   items: BudgetItem[]
 }
+
 
 export interface TimelineMilestone {
   phase: string

@@ -1,3 +1,5 @@
+"""Database engine lifecycle management and asynchronous session factory."""
+
 import sys
 import asyncio
 
@@ -15,9 +17,11 @@ from sqlalchemy.orm import DeclarativeBase
 from .config import get_settings
 
 class Base(DeclarativeBase):
+    """Declarative base class for all SQLAlchemy ORM models."""
     pass
 
 def _async_database_url(database_url: str) -> str:
+    """Ensures database connection string utilizes the postgresql+psycopg driver scheme."""
     if database_url.startswith("postgresql+psycopg://"):
         return database_url
     if database_url.startswith("postgresql://"):
@@ -34,12 +38,15 @@ engine = create_async_engine(
 async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 async def get_session() -> AsyncIterator[AsyncSession]:
+    """Provides a managed asynchronous SQLAlchemy database session."""
     async with async_session_factory() as session:
         yield session
 
 async def check_database_connection() -> None:
+    """Executes a lightweight query to verify active database health."""
     async with engine.begin() as connection:
         await connection.execute(text("SELECT 1"))
 
 async def dispose_engine() -> None:
-    await engine.dispose()
+    """Gracefully disposes and closes all connection pool sockets upon shutdown."""
+    await engine.dispose()

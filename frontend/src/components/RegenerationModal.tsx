@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Sparkles, X, Wand2 } from 'lucide-react'
 
 interface Props {
@@ -18,6 +18,17 @@ export const RegenerationModal: React.FC<Props> = ({
 }) => {
   const [instruction, setInstruction] = useState('')
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, isLoading, onClose])
+
   if (!isOpen) return null
 
   const formattedSection = sectionName.replace('_', ' ').toUpperCase()
@@ -28,11 +39,17 @@ export const RegenerationModal: React.FC<Props> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="regen-dialog-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div className="glass-panel w-full max-w-lg rounded-2xl p-6 border border-purple-500/40 relative shadow-2xl shadow-purple-500/10">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg"
+          aria-label="Close regeneration dialog"
+          className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
         >
           <X className="w-5 h-5" />
         </button>
@@ -42,10 +59,11 @@ export const RegenerationModal: React.FC<Props> = ({
             <Wand2 className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Regenerate {formattedSection}</h3>
+            <h3 id="regen-dialog-title" className="text-lg font-bold text-white">Regenerate {formattedSection}</h3>
             <p className="text-xs text-gray-400">Instruct Gemini to customize this specific section</p>
           </div>
         </div>
+
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

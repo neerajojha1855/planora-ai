@@ -1,9 +1,13 @@
+"""Application configuration and environment variable loading using Pydantic Settings."""
+
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    """Central application settings resolved from environment variables and local .env files."""
+
     # environment
     environment: Literal["development", "production"] = "development"
     debug: bool = False
@@ -33,11 +37,12 @@ class Settings(BaseSettings):
 
     @field_validator("session_cookie_secure", mode="before")
     @classmethod
-    def auto_secure_cookie(cls, v, info):
+    def auto_secure_cookie(cls, v: bool | None, info: Any) -> bool:
+        """Enforces Secure cookie flag when running in production environment."""
         if info.data.get("environment") == "production":
             return True
         
-        return v
+        return bool(v) if v is not None else False
     
     model_config = SettingsConfigDict(
         env_file=(".env.local", ".env", "backend/.env.local", "backend/.env", "../.env.local", "../.env"),
@@ -47,4 +52,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    """Returns singleton cached instance of Application Settings."""
+    return Settings()

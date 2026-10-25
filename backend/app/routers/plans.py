@@ -1,8 +1,10 @@
+"""Plan management router handling event generation, retrieval, update, deletion, and in-place section regeneration."""
+
 import uuid
 from datetime import datetime, timezone
 from typing import Literal
 from fastapi import APIRouter, HTTPException, status, Depends
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.deps import get_current_user
 from ..db import get_session
@@ -21,7 +23,14 @@ from ..services.factory import get_ai_planner
 router = APIRouter(prefix="/plans", tags=["Plans"])
 
 @router.post("", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
-async def create_plan(brief: EventBriefCreate, current_user: User=Depends(get_current_user), ai_planner: AIPlanner=Depends(get_ai_planner), db: AsyncSession=Depends(get_session)) -> PlanResponse:
+async def create_plan(
+    brief: EventBriefCreate,
+    current_user: User = Depends(get_current_user),
+    ai_planner: AIPlanner = Depends(get_ai_planner),
+    db: AsyncSession = Depends(get_session)
+) -> PlanResponse:
+    """Generates an end-to-end celebration plan using AI and persists the result."""
+
     plan_id = uuid.uuid4()
     plan_record = PlanModel(
         id=plan_id,
@@ -268,3 +277,21 @@ async def update_plan(
         created_at=plan_record.created_at,
         updated_at=plan_record.updated_at
     )
+
+@router.delete("/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_plan(
+    plan_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+) -> None:
+    """Deletes an existing plan belonging to the authenticated user."""
+    stmt = select(PlanModel).where(
+        PlanModel.id == plan_id,
+        PlanModel.user_id == current_user.id
+    )
+    plan_record = (await db.execute(stmt)).scalar_one_or_none()
+    if not plan_record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan not found.")
+    
+    await db.delete(plan_record)
+    await db.commit()
