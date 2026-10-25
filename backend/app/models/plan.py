@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM model for celebration plans, AI payloads, and metadata."""
+
 import uuid
 from datetime import date, datetime
 from typing import Any
@@ -8,7 +10,9 @@ from ..db import Base
 
 
 class Plan(Base):
+    """Represents a generated celebration blueprint associated with an authenticated user."""
     __tablename__ = "plans"
+
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

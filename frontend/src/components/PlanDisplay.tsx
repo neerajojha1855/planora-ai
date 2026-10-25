@@ -234,7 +234,13 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
 
       {/* TAB 1: SUMMARY & NEXT ACTIONS */}
       {activeTab === 'summary' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+          role="tabpanel"
+          id="panel-summary"
+          aria-labelledby="tab-summary"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+
           <div className="glass-panel rounded-2xl p-6 border border-[#26263f]">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <ArrowRight className="w-5 h-5 text-purple-400" /> Immediate Next Actions
@@ -267,7 +273,13 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
 
       {/* TAB 2: SMART BUDGET */}
       {activeTab === 'budget' && (
-        <div className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6">
+        <div
+          role="tabpanel"
+          id="panel-budget"
+          aria-labelledby="tab-budget"
+          className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6"
+        >
+
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-white">Budget Breakdown</h3>
@@ -352,7 +364,13 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
 
       {/* TAB 3: TIMELINE WITH INTERACTIVE CHECKMARKS */}
       {activeTab === 'timeline' && (
-        <div className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6">
+        <div
+          role="tabpanel"
+          id="panel-timeline"
+          aria-labelledby="tab-timeline"
+          className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6"
+        >
+
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-white">Milestone Roadmap</h3>
@@ -416,7 +434,13 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
 
       {/* TAB 4: VENDORS WITH STATUS BADGES */}
       {activeTab === 'vendors' && (
-        <div className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6">
+        <div
+          role="tabpanel"
+          id="panel-vendors"
+          aria-labelledby="tab-vendors"
+          className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6"
+        >
+
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-white">Vendor Checklist & Inquiry Inquiries</h3>
@@ -482,7 +506,13 @@ ${content.next_actions.map((a) => `- [ ] ${a}`).join('\n')}
 
       {/* TAB 5: PERSONALIZED IDEAS */}
       {activeTab === 'ideas' && (
-        <div className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6">
+        <div
+          role="tabpanel"
+          id="panel-ideas"
+          aria-labelledby="tab-ideas"
+          className="glass-panel rounded-2xl p-6 border border-[#26263f] space-y-6"
+        >
+
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-white">Creative Personalized Touches</h3>

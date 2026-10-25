@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM model for user authentication sessions and token digests."""
+
 import uuid
 from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, String, func
@@ -7,7 +9,9 @@ from ..db import Base
 
 
 class Session(Base):
+    """Represents an active, authenticated HTTP session with hashed token and expiry timestamp."""
     __tablename__ = "sessions"
+
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

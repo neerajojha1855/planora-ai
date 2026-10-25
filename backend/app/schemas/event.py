@@ -1,14 +1,18 @@
+"""Event brief schema definitions and date validation logic."""
+
 from datetime import date
 from enum import Enum
 from typing import Annotated
 from pydantic import BaseModel, Field, field_validator
 
 class EventType(str, Enum):
+    """Supported celebration categories."""
     WEDDING = "wedding"
     BIRTHDAY = "birthday"
     COMMUNITY = "community"
 
 class EventBriefBase(BaseModel):
+    """Base payload model for event specifications and constraints."""
     title: str = Field(..., min_length=2, max_length=120, description="Name or title of the event celebration")
     event_type: EventType = Field(..., description="Target category: wedding, birthday or community event")
     event_date: date = Field(..., description="Target date of the event (must be current or future)")
@@ -24,13 +28,16 @@ class EventBriefBase(BaseModel):
     @field_validator("event_date")
     @classmethod
     def validate_future_date(cls, v: date) -> date:
+        """Enforces that event date must not be in the past."""
         if v < date.today():
-            raise ValueError("Event date cannoot be in the past.")
+            raise ValueError("Event date cannot be in the past.")
         
         return v
 
 class EventBriefCreate(EventBriefBase):
+    """Request schema for creating a new celebration plan."""
     pass
 
 class EventBriefResponse(EventBriefBase):
-    pass
+    """Response schema for returning event brief parameters."""
+    pass

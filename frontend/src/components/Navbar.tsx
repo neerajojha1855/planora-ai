@@ -47,7 +47,9 @@ export const Navbar: React.FC<Props> = ({
           {/* Saved Blueprints Trigger */}
           <button
             onClick={onOpenSavedPlans}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1a1a2e] border border-[#2d2d4a] hover:border-purple-500/40 text-xs font-medium text-gray-300 hover:text-white transition-all cursor-pointer"
+            aria-haspopup="dialog"
+            aria-label={`Open saved event plans drawer, ${savedPlansCount} plans saved`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1a1a2e] border border-[#2d2d4a] hover:border-purple-500/40 text-xs font-medium text-gray-300 hover:text-white transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400"
             title="View saved event plans"
           >
             <FolderHeart className="w-3.5 h-3.5 text-purple-400" />
@@ -66,12 +68,14 @@ export const Navbar: React.FC<Props> = ({
               <button
                 onClick={onLogout}
                 title="Sign Out"
-                className="p-1.5 rounded-lg bg-[#1a1a2e] border border-[#2d2d4a] text-gray-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer"
+                aria-label="Sign out of active session"
+                className="p-1.5 rounded-lg bg-[#1a1a2e] border border-[#2d2d4a] text-gray-400 hover:text-rose-400 hover:border-rose-500/30 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
+
         </div>
       </div>
     </header>

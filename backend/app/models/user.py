@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM model for user accounts and authentication credentials."""
+
 import uuid
 from datetime import datetime
 from sqlalchemy import Boolean, DateTime, String, func
@@ -7,7 +9,9 @@ from ..db import Base
 
 
 class User(Base):
+    """User account entity managing email identity, Argon2 password hash, and relationships."""
     __tablename__ = "users"
+
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

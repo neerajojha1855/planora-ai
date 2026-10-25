@@ -78,12 +78,27 @@ npm run dev
 
 ### Verification and Quality Checks
 ```sh
-# Backend test execution
+# Backend test execution (29 automated tests)
 cd backend
 python -m pytest -v
 
-# Frontend linking and typecheck
+# Frontend linting and typecheck
 cd frontend
 npm run lint
 npm run build
 ```
+
+---
+
+## 5. PromptWars Submission & Verification Matrix
+
+| Criterion | Implementation & Source Location | Automated Test & Verification |
+|---|---|---|
+| **Core Walkthrough** | Full celebration lifecycle: Auth, configuration, AI generation, in-place edit, export (`frontend/src/App.tsx`, `PlanDisplay.tsx`). | E2E manual walkthrough and automated integration tests. |
+| **Live Input Testing** | Real-time input boundary validation for negative/trivial budgets, email formats, and guest counts (`AIAssistantConsole.tsx`, `LoginScreen.tsx`). | `test_auth_hardening.py`, `test_plans_hardening.py`. |
+| **GenAI in Action** | Gemini 2.5 Flash structured JSON schema generation with exact mathematical budget balancing and contingency reserve (`backend/app/services/gemini_adapter.py`). | `test_backend_ai.py`, `test_plans_contract.py`. |
+| **Selective Regeneration** | In-place section regeneration for timeline, budget, vendors, or ideas without resetting overall plan state (`backend/app/routers/plans.py:156`). | `test_invalid_section_regeneration_rejection`, `test_patch_plan_in_place_editing`. |
+| **Security Hardening** | Argon2id password hashing, HTTP-only session cookies, sliding-window rate limiting, 2MB payload ceiling (`backend/app/core/`). | `test_security_resilience.py:test_security_headers_enforcement`, `test_payload_ceiling_enforcement`. |
+| **Accessibility (WCAG 2.1 AA)** | Keyboard navigation, skip-to-content link, ARIA dialog roles, accessible tabpanels with live status regions (`frontend/src/`). | Manual keyboard tab audit, screen reader tag verification. |
+| **Multi-Service Cloud Deploy** | Vercel multi-service topology (`vercel.json`) routing `/api/*` to FastAPI and `/*` to Vite React under unified domain. | Production live deployment on Vercel. |
+
