@@ -108,10 +108,10 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Event Type Grid */}
         <div>
-          <label className="block text-xs font-semibold uppercase font-mono tracking-wider text-gray-400 mb-2">
+          <label id="event-type-label" className="block text-xs font-semibold uppercase font-mono tracking-wider text-gray-400 mb-2">
             1. Select Event Type
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div role="radiogroup" aria-labelledby="event-type-label" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { type: 'wedding' as const, label: 'Wedding Celebration', icon: Heart, desc: 'Ceremony, banquet & milestones' },
               { type: 'birthday' as const, label: 'Milestone Birthday', icon: Cake, desc: 'Parties, entertainment & theme' },
@@ -123,6 +123,9 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
                 <button
                   type="button"
                   key={item.type}
+                  role="radio"
+                  aria-checked={isSelected}
+                  aria-label={`${item.label}: ${item.desc}`}
                   onClick={() => setEventType(item.type)}
                   className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                     isSelected
@@ -147,10 +150,12 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
         {/* Parameters Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center gap-1.5">
+            <label htmlFor="event-location" className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-purple-400" /> Location
             </label>
             <input
+              id="event-location"
+              aria-label="Celebration Location"
               type="text"
               required
               value={location}
@@ -161,10 +166,12 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center gap-1.5">
+            <label htmlFor="event-date" className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-purple-400" /> Target Date
             </label>
             <input
+              id="event-date"
+              aria-label="Target Celebration Date"
               type="date"
               required
               value={eventDate}
@@ -174,11 +181,13 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center justify-between">
+            <label htmlFor="event-guest-count" className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-purple-400" /> Guest Count</span>
               {guestCount !== '' && <strong className="text-purple-300 font-bold">{guestCount}</strong>}
             </label>
             <input
+              id="event-guest-count"
+              aria-label="Guest Count"
               type="number"
               min={1}
               max={10000}
@@ -191,16 +200,18 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center justify-between">
+            <label htmlFor="event-budget" className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5"><IndianRupee className="w-3.5 h-3.5 text-amber-400" /> Budget ({currency})</span>
               {budget !== '' && (
                 <strong className="text-amber-400 font-bold">₹{Number(budget).toLocaleString('en-IN')}</strong>
               )}
             </label>
             <input
+              id="event-budget"
+              aria-label="Budget in INR"
               type="number"
               min={100}
-              step={1000}
+              step="any"
               required
               value={budget}
               onChange={(e) => setBudget(e.target.value === '' ? '' : Number(e.target.value))}
@@ -212,10 +223,12 @@ export const AIAssistantConsole: React.FC<Props> = ({ onSubmit, isLoading }) => 
 
         {/* Vision & Notes */}
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5">
+          <label htmlFor="event-notes" className="block text-xs font-semibold text-gray-400 uppercase font-mono mb-1.5">
             Vision, Vibe & Special Requests
           </label>
           <textarea
+            id="event-notes"
+            aria-label="Vision, Vibe & Special Requests"
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

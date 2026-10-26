@@ -40,7 +40,7 @@ class Settings(BaseSettings):
         return v
     
     model_config = SettingsConfigDict(
-        env_file=(".env.local", ".env", "../.env.local", "../.env"),
+        env_file=(".env.local", ".env", "backend/.env.local", "backend/.env", "../.env.local", "../.env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )
